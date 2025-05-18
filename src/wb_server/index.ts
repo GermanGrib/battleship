@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
+import { handleMessage } from "../handlers";
 
-// Хранилище всех подключенных клиентов
-const clients = new Set<WebSocket>();
+export const clients = new Set<WebSocket>();
 
 export function startWebSocketServer(port: number) {
   const wss = new WebSocketServer({ port });
@@ -13,9 +13,21 @@ export function startWebSocketServer(port: number) {
     clients.add(ws);
 
     ws.on("message", (message) => {
-      console.log(`Received: ${message}`);
+      try {
+        const parsedMessage = JSON.parse(message.toString());
+        if (typeof parsedMessage.data === "string") {
+          parsedMessage.data = JSON.parse(parsedMessage.data);
+        }
 
-      ws.send(`Server received: ${message}`);
+        const response = handleMessage(ws, parsedMessage);
+
+        if (response) {
+          console.log("Sending response:", response);
+          ws.send(JSON.stringify(response));
+        }
+      } catch (error) {
+        console.error("Error handling message:", error);
+      }
     });
 
     ws.on("close", () => {
