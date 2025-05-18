@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { handleMessage } from "../handlers";
+import { messageHandler } from "../messageHandler";
 
 export const clients = new Map<string, WebSocket>();
 let clientIdCounter = 0;
@@ -15,7 +15,7 @@ export function startWebSocketServer(port: number) {
 
     ws.on("message", (message: string) => {
       console.log(`Received message from ${clientId}: ${message}`);
-      handleMessage(ws, message, clientId);
+      messageHandler(ws, message, clientId);
     });
 
     ws.on("close", () => {

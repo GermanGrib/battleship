@@ -1,35 +1,10 @@
 import { WebSocket } from "ws";
-import { WSMessage } from "./types";
-import { clients as activeConnectedClients } from "./wb_server";
-import { sendMessage } from "./utils/helpers";
-import { Player, players } from "./entities/player";
-
-export function handleMessage(
-  ws: WebSocket,
-  message: string,
-  clientId: string,
-) {
-  try {
-    const msg: WSMessage = JSON.parse(message);
-    const { type, data } = msg;
-    switch (type) {
-      case "reg":
-        handleRegistration(ws, data, clientId);
-        break;
-
-      // case "create_room":
-      //   handleCreateRoom(ws);
-      //   break;
-      default:
-        console.warn("Unknown message type:");
-    }
-  } catch (error) {
-    console.warn(error);
-  }
-}
+import { clients as activeConnectedClients } from "../wb_server";
+import { Player, players } from "../entities/player";
+import { sendMessage } from "../utils/helpers";
 
 // eslint-disable-next-line
-export function handleRegistration(ws: WebSocket, data: any, clientId: string) {
+const handleRegistration = (ws: WebSocket, data: any, clientId: string) => {
   const { name, password } = JSON.parse(data);
   console.log("handleRegistration", name, password, data, players.keys());
 
@@ -66,4 +41,6 @@ export function handleRegistration(ws: WebSocket, data: any, clientId: string) {
   }
 
   sendRegResponse(false);
-}
+};
+
+export { handleRegistration };

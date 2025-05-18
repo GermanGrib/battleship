@@ -10,6 +10,14 @@ interface RegistrationResponseData {
   errorText: string;
 }
 
+interface UpdateRoomResponseData {
+  roomId: number | string;
+  roomUsers: {
+    name: string;
+    index: number | string;
+  }[];
+}
+
 type WSMessage =
   | {
       type: "reg";
@@ -19,6 +27,16 @@ type WSMessage =
   | {
       type: "reg";
       data: RegistrationResponseData;
+      id: number;
+    }
+  | {
+      type: "create_room";
+      data: UpdateRoomResponseData[];
+      id: number;
+    }
+  | {
+      type: "update_room";
+      data: UpdateRoomResponseData[];
       id: number;
     };
 
