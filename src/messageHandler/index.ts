@@ -1,7 +1,7 @@
 import { WebSocket } from "ws";
 import { WSMessage } from "../types";
 import { handleRegistration } from "./playerHandler";
-import { handleCreateRoom } from "./roomHandler";
+import { handleAddUserToRoom, handleCreateRoom } from "./roomHandler";
 
 function messageHandler(ws: WebSocket, message: string, clientId: string) {
   try {
@@ -14,6 +14,10 @@ function messageHandler(ws: WebSocket, message: string, clientId: string) {
 
       case "create_room":
         handleCreateRoom(clientId);
+        break;
+
+      case "add_user_to_room":
+        handleAddUserToRoom(ws, data, clientId);
         break;
 
       default:

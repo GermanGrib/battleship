@@ -3,6 +3,10 @@ interface RegistrationRequestData {
   password: string;
 }
 
+interface AddUserToRoomRequestData {
+  indexRoom: number | string;
+}
+
 interface RegistrationResponseData {
   name: string;
   index: number | string;
@@ -18,11 +22,23 @@ interface UpdateRoomResponseData {
   }[];
 }
 
+interface CreateGameResponseData {
+  idGame: number | string;
+  idPlayer: number | string;
+}
+
+interface Ship {
+  position: { x: number; y: number };
+  direction: boolean;
+  length: 1 | 2 | 3 | 4;
+  type: "small" | "medium" | "large" | "huge";
+}
+
 type WSMessage =
   | {
       type: "reg";
       data: RegistrationRequestData;
-      id: 0;
+      id: number;
     }
   | {
       type: "reg";
@@ -38,6 +54,21 @@ type WSMessage =
       type: "update_room";
       data: UpdateRoomResponseData[];
       id: number;
+    }
+  | {
+      type: "add_user_to_room";
+      data: AddUserToRoomRequestData;
+      id: number;
+    }
+  | {
+      type: "create_game";
+      data: CreateGameResponseData;
+      id: number;
+    }
+  | {
+      type: "error";
+      data: { errorText: string };
+      id: number;
     };
 
-export type { WSMessage };
+export type { WSMessage, Ship };
