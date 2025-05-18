@@ -1,46 +1,26 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { handleMessage } from "../handlers";
 
-export const clients = new Set<WebSocket>();
+export const clients = new Map<string, WebSocket>();
+let clientIdCounter = 0;
 
 export function startWebSocketServer(port: number) {
   const wss = new WebSocketServer({ port });
-
   console.log(`WebSocket server started on ws://localhost:${port}`);
 
   wss.on("connection", (ws) => {
+    const clientId = (clientIdCounter++).toString();
+    clients.set(clientId, ws);
     console.log("New client connected");
-    clients.add(ws);
 
-    ws.on("message", (message) => {
-      try {
-        const parsedMessage = JSON.parse(message.toString());
-        if (typeof parsedMessage.data === "string") {
-          parsedMessage.data = JSON.parse(parsedMessage.data);
-        }
-
-        const response = handleMessage(ws, parsedMessage);
-
-        if (response) {
-          console.log("Sending response:", response);
-          ws.send(JSON.stringify(response));
-        }
-      } catch (error) {
-        console.error("Error handling message:", error);
-      }
+    ws.on("message", (message: string) => {
+      console.log(`Received message from ${clientId}: ${message}`);
+      handleMessage(ws, message, clientId);
     });
 
     ws.on("close", () => {
-      console.log("Client disconnected");
-      clients.delete(ws);
+      console.log(`Client disconnected: ${clientId}`);
+      clients.delete(clientId);
     });
-
-    ws.on("error", (error) => {
-      console.error("WebSocket error:", error);
-    });
-  });
-
-  wss.on("close", () => {
-    console.log("WebSocket server closed");
   });
 }

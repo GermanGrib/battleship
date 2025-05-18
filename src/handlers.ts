@@ -1,58 +1,69 @@
 import { WebSocket } from "ws";
-import {
-  Player,
-  RegistrationData,
-  RegistrationResponseData,
-  WSMessage,
-} from "./types";
-import { addPlayer, findPlayerByName } from "./store";
+import { WSMessage } from "./types";
+import { clients as activeConnectedClients } from "./wb_server";
+import { sendMessage } from "./utils/helpers";
+import { Player, players } from "./entities/player";
 
-export function handleMessage(ws: WebSocket, message: WSMessage) {
-  switch (message.type) {
-    case "reg": {
-      const regResponse = handleRegistration(ws, message.data);
-      return regResponse;
+export function handleMessage(
+  ws: WebSocket,
+  message: string,
+  clientId: string,
+) {
+  try {
+    const msg: WSMessage = JSON.parse(message);
+    const { type, data } = msg;
+    switch (type) {
+      case "reg":
+        handleRegistration(ws, data, clientId);
+        break;
+
+      // case "create_room":
+      //   handleCreateRoom(ws);
+      //   break;
+      default:
+        console.warn("Unknown message type:");
     }
-    default:
-      console.warn("Unknown message type:", message.type);
+  } catch (error) {
+    console.warn(error);
   }
 }
 
-function handleRegistration(
-  ws: WebSocket,
-  data: RegistrationData,
-): RegistrationResponseData | undefined {
-  const existingPlayer = findPlayerByName(data.name);
+// eslint-disable-next-line
+export function handleRegistration(ws: WebSocket, data: any, clientId: string) {
+  const { name, password } = JSON.parse(data);
+  console.log("handleRegistration", name, password, data, players.keys());
 
-  const makeResponse = (
-    player: Player,
-    error: boolean,
-    errorText: string,
-  ): RegistrationResponseData => ({
-    type: "reg",
-    id: 0,
-    data: JSON.stringify({
-      name: player.name,
-      index: player.id,
-      error,
-      errorText,
-    }),
-  });
+  let player = Array.from(players.values()).find((p) => p.name === name);
 
-  if (existingPlayer) {
-    if (existingPlayer.password !== data.password) {
-      return makeResponse(existingPlayer, true, "Invalid password");
+  const sendRegResponse = (error: boolean, errorText = "") => {
+    sendMessage(ws, {
+      type: "reg",
+      data: {
+        name,
+        index: clientId,
+        error,
+        errorText,
+      },
+      id: 0,
+    });
+  };
+
+  if (player) {
+    if (player.password !== password) {
+      return sendRegResponse(true, "Invalid password");
     }
 
-    existingPlayer.ws = ws;
-    return makeResponse(existingPlayer, false, "");
+    if (activeConnectedClients.has(player.clientId)) {
+      console.log("Player already connected");
+      return sendRegResponse(true, "User already connected");
+    }
+
+    player.ws = ws;
+    player.clientId = clientId;
+  } else {
+    player = new Player(name, password, clientId, ws);
+    players.set(clientId, player);
   }
 
-  addPlayer(data);
-
-  const newPlayer = findPlayerByName(data.name);
-  if (newPlayer) {
-    newPlayer.ws = ws;
-    return makeResponse(newPlayer, false, "");
-  }
+  sendRegResponse(false);
 }

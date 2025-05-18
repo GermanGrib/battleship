@@ -1,34 +1,25 @@
-import { WebSocket } from "ws";
-
-interface Player {
-  id: number;
-  name: string;
-  password: string;
-  wins: number;
-  ws: WebSocket | null;
-}
-
-interface RegistrationData {
+interface RegistrationRequestData {
   name: string;
   password: string;
 }
 
 interface RegistrationResponseData {
-  type: "reg";
-  data: string;
-  id: number;
+  name: string;
+  index: number | string;
+  error: boolean;
+  errorText: string;
 }
 
 type WSMessage =
   | {
       type: "reg";
-      data: RegistrationData;
+      data: RegistrationRequestData;
       id: 0;
     }
   | {
-      type: "reg_response";
+      type: "reg";
       data: RegistrationResponseData;
       id: number;
     };
 
-export type { Player, RegistrationResponseData, WSMessage, RegistrationData };
+export type { WSMessage };
