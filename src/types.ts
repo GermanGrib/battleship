@@ -7,6 +7,19 @@ interface AddUserToRoomRequestData {
   indexRoom: number | string;
 }
 
+interface AddShipsRequestData {
+  gameId: number | string;
+  ships: Ship[];
+  indexPlayer: number | string;
+}
+
+interface AttackRequestData {
+  gameId: number | string;
+  x: number;
+  y: number;
+  indexPlayer: number | string;
+}
+
 interface RegistrationResponseData {
   name: string;
   index: number | string;
@@ -25,6 +38,33 @@ interface UpdateRoomResponseData {
 interface CreateGameResponseData {
   idGame: number | string;
   idPlayer: number | string;
+}
+
+interface StartGameResponseData {
+  ships: Ship[];
+  currentPlayerIndex: number | string;
+}
+
+interface UpdateWinnersResponseData {
+  name: string;
+  wins: number;
+}
+
+interface AttackResponseData {
+  position: {
+    x: number;
+    y: number;
+  };
+  currentPlayer: number | string;
+  status: "miss" | "killed" | "shot";
+}
+
+interface TurnResponseData {
+  currentPlayer: number | string;
+}
+
+interface FinishResponseData {
+  winPlayer: number | string;
 }
 
 interface Ship {
@@ -63,6 +103,41 @@ type WSMessage =
   | {
       type: "create_game";
       data: CreateGameResponseData;
+      id: number;
+    }
+  | {
+      type: "add_ships";
+      data: AddShipsRequestData;
+      id: number;
+    }
+  | {
+      type: "start_game";
+      data: StartGameResponseData;
+      id: number;
+    }
+  | {
+      type: "update_winners";
+      data: UpdateWinnersResponseData[];
+      id: number;
+    }
+  | {
+      type: "attack";
+      data: AttackRequestData;
+      id: number;
+    }
+  | {
+      type: "attack";
+      data: AttackResponseData;
+      id: number;
+    }
+  | {
+      type: "turn";
+      data: TurnResponseData;
+      id: number;
+    }
+  | {
+      type: "finish";
+      data: FinishResponseData;
       id: number;
     }
   | {
