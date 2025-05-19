@@ -1,8 +1,8 @@
 import { WebSocket } from "ws";
 import { WSMessage } from "../types";
-import { handleRegistration } from "./playerHandler";
 import { handleAddUserToRoom, handleCreateRoom } from "./roomHandler";
 import { handleAddShips, handleAttack } from "./gameHandler";
+import { handleRegistration } from "./handleRegistration";
 
 function messageHandler(ws: WebSocket, message: string, clientId: string) {
   try {

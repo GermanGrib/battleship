@@ -81,105 +81,114 @@ const handleAttack = (data: any) => {
   clearTimeout(gameTimers.get(gameId)!);
   gameTimers.delete(gameId);
 
-  if (game && game.currentTurn === indexPlayer) {
-    const opponentId = Object.keys(game.players).find(
-      (id) => id !== indexPlayer,
-    )!;
-    const opponentData = game.players[opponentId];
+  const enemyPlayerId = Object.keys(game.players).find(
+    (id) => id !== indexPlayer,
+  )!;
+  const enemyState = game.players[enemyPlayerId];
 
-    const hitShip = opponentData.ships.find((ship) => {
-      return shipContainsCoordinate(ship, x, y);
-    });
+  const targetShip = enemyState.ships.find((ship) =>
+    shipContainsCoordinate(ship, x, y),
+  );
 
-    let status: "miss" | "shot" | "killed" = "miss";
-    if (hitShip) {
-      if (
-        !opponentData.shotsReceived.some((shot) => shot.x === x && shot.y === y)
-      ) {
-        opponentData.shotsReceived.push({ x, y });
-      }
-      const isKilled = isShipSunk(hitShip, opponentData.shotsReceived);
-      status = isKilled ? "killed" : "shot";
+  let result: "miss" | "shot" | "killed" = "miss";
 
-      if (isKilled) {
-        const surroundingCells = getSurroundingCellsForShip(hitShip);
-        surroundingCells.forEach((cell) => {
-          if (
-            cell.x >= 0 &&
-            cell.y >= 0 &&
-            !opponentData.shotsReceived.some(
-              (shot) => shot.x === cell.x && shot.y === cell.y,
-            ) &&
-            !opponentData.ships.some((ship) =>
-              shipContainsCoordinate(ship, cell.x, cell.y),
-            )
-          ) {
-            opponentData.shotsReceived.push(cell);
-            const missMessage: WSMessage = {
-              type: "attack",
-              data: {
-                position: { x: cell.x, y: cell.y },
-                currentPlayer: indexPlayer,
-                status: "miss",
-              },
-              id: 0,
-            };
-            broadcastGameMessage(game, missMessage);
-          }
-        });
-      }
-
-      if (isPlayerDefeated(opponentData)) {
-        sendFinishMessage(game, indexPlayer);
-        updatePlayerWin(indexPlayer);
-        return;
-      }
+  if (targetShip) {
+    const alreadyHit = enemyState.shotsReceived.some(
+      (shot) => shot.x === x && shot.y === y,
+    );
+    if (!alreadyHit) {
+      enemyState.shotsReceived.push({ x, y });
     }
 
-    const attackMessage: WSMessage = {
-      type: "attack",
-      data: {
-        position: { x, y },
-        currentPlayer: indexPlayer,
-        status,
-      },
-      id: 0,
-    };
+    const isShipKilled = isShipSunk(targetShip, enemyState.shotsReceived);
+    result = isShipKilled ? "killed" : "shot";
 
-    broadcastGameMessage(game, attackMessage);
+    if (isShipKilled) {
+      const surroundingCells = getSurroundingCellsForShip(targetShip);
+      surroundingCells.forEach(({ x: cx, y: cy }) => {
+        const alreadyMarked = enemyState.shotsReceived.some(
+          (shot) => shot.x === cx && shot.y === cy,
+        );
+        const occupied = enemyState.ships.some((ship) =>
+          shipContainsCoordinate(ship, cx, cy),
+        );
 
-    if (status === "miss") {
-      game.currentTurn = opponentId;
+        if (cx >= 0 && cy >= 0 && !alreadyMarked && !occupied) {
+          enemyState.shotsReceived.push({ x: cx, y: cy });
+
+          const missAroundMessage: WSMessage = {
+            type: "attack",
+            data: {
+              position: { x: cx, y: cy },
+              currentPlayer: indexPlayer,
+              status: "miss",
+            },
+            id: 0,
+          };
+
+          broadcastGameMessage(game, missAroundMessage);
+        }
+      });
     }
-    sendTurnMessage(game);
-  } else {
-    console.log("Invalid turn or game not found");
+
+    if (isPlayerDefeated(enemyState)) {
+      sendFinishMessage(game, indexPlayer);
+      updatePlayerWin(indexPlayer);
+      return;
+    }
   }
+
+  const attackResultMessage: WSMessage = {
+    type: "attack",
+    data: {
+      position: { x, y },
+      currentPlayer: indexPlayer,
+      status: result,
+    },
+    id: 0,
+  };
+
+  broadcastGameMessage(game, attackResultMessage);
+
+  if (result === "miss") {
+    game.currentTurn = enemyPlayerId;
+  }
+
+  sendTurnMessage(game);
 };
 
 const performRandomAttack = (game: Game) => {
-  const playerId = game.currentTurn;
-  const ws = players.get(playerId)?.ws;
-  if (!ws) return;
+  const currentPlayerId = game.currentTurn;
+  const currentPlayerWs = players.get(currentPlayerId)?.ws;
+  if (!currentPlayerWs) return;
 
   let x = 0;
   let y = 0;
-  let validAttack = false;
+  let isValidTarget = false;
 
-  while (!validAttack) {
+  const enemyPlayerId = Object.keys(game.players).find(
+    (id) => id !== currentPlayerId,
+  )!;
+  const enemyState = game.players[enemyPlayerId];
+
+  while (!isValidTarget) {
     x = getRandomCoordinate();
     y = getRandomCoordinate();
 
-    const opponentId = Object.keys(game.players).find((id) => id !== playerId)!;
-    const opponentData = game.players[opponentId];
-
-    validAttack = !opponentData.shotsReceived.some(
+    const alreadyShot = enemyState.shotsReceived.some(
       (shot) => shot.x === x && shot.y === y,
     );
+
+    isValidTarget = !alreadyShot;
   }
 
   handleAttack(
-    JSON.stringify({ gameId: game.idGame, x, y, indexPlayer: playerId }),
+    JSON.stringify({
+      gameId: game.idGame,
+      x,
+      y,
+      indexPlayer: currentPlayerId,
+    }),
   );
 };
 

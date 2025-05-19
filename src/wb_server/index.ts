@@ -1,5 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
-import { messageHandler } from "../messageHandler";
+import { messageHandler } from "../handlers";
 
 export const clients = new Map<string, WebSocket>();
 let clientIdCounter = 0;
