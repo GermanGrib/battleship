@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Template for the WebSocket remote control task",
   "main": "src/index.ts",
-  "type": "commonjs",
   "scripts": {
     "build": "webpack",
     "start": "npm run build && node dist/bundle.js",

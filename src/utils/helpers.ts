@@ -69,7 +69,6 @@ const updatePlayerWin = (clientId: string) => {
 
 const sendUpdateWinners = () => {
   const winnerList = Array.from(players.values())
-    .filter((p) => !p.name.startsWith("Bot"))
     .sort((a, b) => b.wins - a.wins)
     .map((p) => ({ name: p.name, wins: p.wins }));
 
